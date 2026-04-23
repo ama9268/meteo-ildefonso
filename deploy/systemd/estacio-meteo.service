@@ -1,0 +1,22 @@
+[Unit]
+Description=EstacioMeteo — Django Weather Station
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/EstacioMeteo
+EnvironmentFile=/home/pi/EstacioMeteo/.env
+Environment=DJANGO_SETTINGS_MODULE=estacio_meteo.settings.production
+ExecStart=/home/pi/EstacioMeteo/venv/bin/gunicorn \
+    --workers 2 \
+    --bind 127.0.0.1:8000 \
+    --timeout 30 \
+    --access-logfile - \
+    estacio_meteo.wsgi:application
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

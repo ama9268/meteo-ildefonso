@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Histórico — EstacioMeteo{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Histórico de lecturas</h2>
+  <a href="/api/v1/readings/export/?from={{ date_from }}&to={{ date_to }}"
+     class="btn btn-outline-success btn-sm">⬇ Exportar CSV</a>
+</div>
+
+<form method="get" class="row g-2 mb-4">
+  <div class="col-auto">
+    <label class="form-label small">Desde</label>
+    <input type="date" name="from" value="{{ date_from }}" class="form-control form-control-sm">
+  </div>
+  <div class="col-auto">
+    <label class="form-label small">Hasta</label>
+    <input type="date" name="to" value="{{ date_to }}" class="form-control form-control-sm">
+  </div>
+  <div class="col-auto align-self-end">
+    <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+    <a href="{% url 'history' %}" class="btn btn-secondary btn-sm">Limpiar</a>
+  </div>
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Fecha/Hora (UTC)</th>
+          <th>T.ext (°C)</th>
+          <th>Hum. (%)</th>
+          <th>Presión (hPa)</th>
+          <th>Viento (km/h)</th>
+          <th>Ráfaga</th>
+          <th>Lluvia (mm)</th>
+          <th>UV</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in readings %}
+        <tr>
+          <td>{{ r.received_at|date:"d/m/Y H:i:s" }}</td>
+          <td>{{ r.temperature_out|default:"—" }}</td>
+          <td>{{ r.humidity_out|default:"—" }}</td>
+          <td>{{ r.pressure|default:"—" }}</td>
+          <td>{{ r.wind_speed|default:"—" }}</td>
+          <td>{{ r.wind_gust|default:"—" }}</td>
+          <td>{{ r.rain_daily|default:"—" }}</td>
+          <td>{{ r.uv_index|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center text-muted py-3">Sin lecturas en este rango.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if is_paginated %}
+<nav class="mt-3">
+  <ul class="pagination pagination-sm justify-content-center">
+    {% if page_obj.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&from={{ date_from }}&to={{ date_to }}">«</a>
+      </li>
+    {% endif %}
+    <li class="page-item disabled">
+      <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    </li>
+    {% if page_obj.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.next_page_number }}&from={{ date_from }}&to={{ date_to }}">»</a>
+      </li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}

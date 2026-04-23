@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — EstacioMeteo{% endblock %}
+
+{% block content %}
+
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-2">
+  <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-100">Estado actual</h2>
+  {% if latest %}
+  <span class="text-sm text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-700 px-3 py-1 rounded-full">
+    {{ latest.received_at|date:"d/m/Y H:i" }} UTC
+  </span>
+  {% endif %}
+</div>
+
+{% if not latest %}
+  <div class="bg-sky-50 dark:bg-slate-800 border border-sky-200 dark:border-slate-600 rounded-xl p-6 text-sky-700 dark:text-sky-300 text-sm">
+    Sin datos todavía. Conecta la estación al endpoint <code>/weather</code>.
+  </div>
+
+{% else %}
+{% with l=latest %}
+
+<!-- Grid de 8 métricas -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+
+  <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md dark:shadow-slate-900/50 p-4 text-center border border-transparent dark:border-slate-700 hover:shadow-lg transition-shadow">
+    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Temperatura ext.</p>
+    <p class="text-4xl font-extrabold text-rose-500 dark:text-rose-400 tabular-nums leading-none">{{ l.temperature_out|default:"—" }}</p>
+    <p class="text-sm text-slate-400 dark:text-slate-500 mt-1">°C</p>
+    {% if l.feels_like is not None %}
+    <p class="text-xs text-slate-400 dark:text-slate-500 mt-2">
+      Sensación <span class="font-semibold text-rose-400 dark:text-rose-300">{{ l.feels_like }} °C</span>
+    </p>
+    {% endif %}
+  </div>
+
+  <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md dark:shadow-slate-900/50 p-4 text-center border border-transparent dark:border-slate-700 hover:shadow-lg transition-shadow">
+    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Humedad ext.</p>
+    <p class="text-4xl font-extrabold text-blue-500 dark:text-blue-400 tabular-nums leading-none">{{ l.humidity_out|default:"—" }}</p>
+    <p class="text-sm text-slate-400 dark:text-slate-500 mt-1">%</p>
+  </div>
+
+  <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md dark:shadow-slate-900/50 p-4 text-center border border-transparent dark:border-slate-700 hover:shadow-lg transition-shadow">
+    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Presión</p>
+    <p class="text-4xl font-extrabold text-emerald-500 dark:text-emerald-400 tabular-nums leading-none">{{ l.pressure|default:"—" }}</p>
+    <p class="text-sm text-slate-400 dark:text-slate-500 mt-1">hPa</p>
+  </div>
+
+  <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md dark:shadow-slate-900/50 p-4 text-center border border-transparent dark:border-slate-700 hover:shadow-lg transition-shadow">
+    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Viento</p>
+    <p class="text-4xl font-extrabold text-amber-500 dark:text-amber-400 tabular-nums leading-none">{{ l.wind_speed|default:"—" }}</p>
+    <p class="text-sm text-slate-400 dark:text-slate-500 mt-1">km/h</p>
+  </div>
+
+  <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md dark:shadow-slate-900/50 p-4 text-center border border-transparent dark:border-slate-700 hover:shadow-lg transition-shadow">
+    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Ráfaga</p>
+    <p class="text-4xl font-extrabold text-orange-500 dark:text-orange-400 tabular-nums leading-none">{{ l.wind_gust|default:"—" }}</p>
+    <p class="text-sm text-slate-400 dark:text-slate-500 mt-1">km/h</p>
+  </div>
+
+  <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md dark:shadow-slate-900/50 p-4 text-center border border-transparent dark:border-slate-700 hover:shadow-lg transition-shadow">
+    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Lluvia diaria</p>
+    <p class="text-4xl font-extrabold text-cyan-500 dark:text-cyan-400 tabular-nums leading-none">{{ l.rain_daily|default:"—" }}</p>
+    <p class="text-sm text-slate-400 dark:text-slate-500 mt-1">mm</p>
+  </div>
+
+  <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md dark:shadow-slate-900/50 p-4 text-center border border-transparent dark:border-slate-700 hover:shadow-lg transition-shadow">
+    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Índice UV</p>
+    <p class="text-4xl font-extrabold text-purple-500 dark:text-purple-400 tabular-nums leading-none">{{ l.uv_index|default:"—" }}</p>
+    <p class="text-sm text-slate-400 dark:text-slate-500 mt-1">UV</p>
+  </div>
+
+  <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md dark:shadow-slate-900/50 p-4 text-center border border-transparent dark:border-slate-700 hover:shadow-lg transition-shadow">
+    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Rad. solar</p>
+    <p class="text-4xl font-extrabold text-yellow-500 dark:text-yellow-400 tabular-nums leading-none">{{ l.solar_radiation|default:"—" }}</p>
+    <p class="text-sm text-slate-400 dark:text-slate-500 mt-1">W/m²</p>
+  </div>
+
+</div>
+
+<!-- Grid de 4 gráficos -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+  <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md dark:shadow-slate-900/50 p-4 border border-transparent dark:border-slate-700">
+    <h6 class="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-3">Temperatura exterior — últimas 24h</h6>
+    <canvas id="chartTemp" class="meteo-chart"></canvas>
+  </div>
+
+  <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md dark:shadow-slate-900/50 p-4 border border-transparent dark:border-slate-700">
+    <h6 class="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-3">Humedad exterior — últimas 24h</h6>
+    <canvas id="chartHum" class="meteo-chart"></canvas>
+  </div>
+
+  <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md dark:shadow-slate-900/50 p-4 border border-transparent dark:border-slate-700">
+    <h6 class="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-3">Presión — últimas 24h</h6>
+    <canvas id="chartPres" class="meteo-chart"></canvas>
+  </div>
+
+  <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md dark:shadow-slate-900/50 p-4 border border-transparent dark:border-slate-700">
+    <h6 class="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-3">Viento — últimas 24h</h6>
+    <canvas id="chartWind" class="meteo-chart"></canvas>
+  </div>
+
+</div>
+{% endwith %}
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CHART_PALETTES = {
+  light: {
+    gridColor: 'rgba(100,116,139,0.15)', tickColor: '#64748b',
+    temp:  { border: '#f43f5e', fill: 'rgba(244,63,94,0.12)'   },
+    hum:   { border: '#3b82f6', fill: 'rgba(59,130,246,0.12)'  },
+    pres:  { border: '#10b981', fill: 'rgba(16,185,129,0.12)'  },
+    wind:  { border: '#f59e0b', fill: 'rgba(245,158,11,0.12)'  },
+  },
+  dark: {
+    gridColor: 'rgba(148,163,184,0.10)', tickColor: '#94a3b8',
+    temp:  { border: '#fb7185', fill: 'rgba(251,113,133,0.15)' },
+    hum:   { border: '#60a5fa', fill: 'rgba(96,165,250,0.15)'  },
+    pres:  { border: '#34d399', fill: 'rgba(52,211,153,0.15)'  },
+    wind:  { border: '#fbbf24', fill: 'rgba(251,191,36,0.15)'  },
+  }
+};
+
+const activeCharts = {};
+
+function isDark() { return document.documentElement.classList.contains('dark'); }
+function getPalette() { return isDark() ? CHART_PALETTES.dark : CHART_PALETTES.light; }
+
+function buildOptions(palette) {
+  return {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: {
+        ticks: { maxTicksLimit: 8, color: palette.tickColor, font: { size: 11 } },
+        grid:  { color: palette.gridColor }
+      },
+      y: {
+        ticks: { color: palette.tickColor, font: { size: 11 } },
+        grid:  { color: palette.gridColor }
+      }
+    }
+  };
+}
+
+function mkChart(id, label, key, colorKey, labels, data) {
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  if (activeCharts[id]) activeCharts[id].destroy();
+  const palette = getPalette();
+  const colors  = palette[colorKey];
+  activeCharts[id] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label,
+        data: data.map(d => d[key]),
+        borderColor:     colors.border,
+        backgroundColor: colors.fill,
+        borderWidth: 2,
+        tension: 0.3,
+        pointRadius: 2,
+        pointHoverRadius: 4,
+        fill: true,
+      }]
+    },
+    options: buildOptions(palette)
+  });
+  activeCharts[id].__meteoColorKey = colorKey;
+}
+
+window.updateChartsTheme = function() {
+  const palette = getPalette();
+  Object.entries(activeCharts).forEach(([id, chart]) => {
+    const colorKey = chart.__meteoColorKey;
+    if (colorKey && palette[colorKey]) {
+      chart.data.datasets[0].borderColor     = palette[colorKey].border;
+      chart.data.datasets[0].backgroundColor = palette[colorKey].fill;
+    }
+    chart.options.scales.x.ticks.color = palette.tickColor;
+    chart.options.scales.x.grid.color  = palette.gridColor;
+    chart.options.scales.y.ticks.color = palette.tickColor;
+    chart.options.scales.y.grid.color  = palette.gridColor;
+    chart.update('none');
+  });
+};
+
+fetch("/api/v1/readings/chart/?hours=24", { headers: { "X-Requested-With": "XMLHttpRequest" } })
+  .then(r => r.json())
+  .then(data => {
+    const labels = data.map(d => {
+      const dt = new Date(d.received_at);
+      return dt.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+    });
+    mkChart("chartTemp", "°C",   "temperature_out", "temp", labels, data);
+    mkChart("chartHum",  "%",    "humidity_out",    "hum",  labels, data);
+    mkChart("chartPres", "hPa",  "pressure",        "pres", labels, data);
+    mkChart("chartWind", "km/h", "wind_speed",      "wind", labels, data);
+  })
+  .catch(() => {});
+</script>
+{% endblock %}

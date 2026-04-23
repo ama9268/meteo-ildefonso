@@ -1,0 +1,24 @@
+/* Transición suave al cambiar tema */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color;
+  transition-duration: 200ms;
+  transition-timing-function: ease-in-out;
+}
+canvas, img, svg { transition: none; }
+
+/* Canvas Chart.js */
+.meteo-chart {
+  display: block;
+  width: 100% !important;
+  max-height: 200px;
+}
+
+/* Scrollbar modo oscuro (Webkit) */
+.dark ::-webkit-scrollbar { width: 8px; height: 8px; }
+.dark ::-webkit-scrollbar-track { background: #1e293b; }
+.dark ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+/* Código inline */
+code { background: rgba(100,116,139,0.15); border-radius: 4px; padding: 1px 5px; font-size: 0.875em; }
+.dark code { background: rgba(148,163,184,0.15); }
