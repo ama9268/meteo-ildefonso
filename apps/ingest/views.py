@@ -7,7 +7,7 @@ from django.conf import settings
 from django.http import HttpRequest, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-from rest_framework import filters, status, viewsets
+from rest_framework import filters, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -62,6 +62,7 @@ def health(request: HttpRequest) -> HttpResponse:
 class WeatherReadingViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = WeatherReading.objects.all()
     serializer_class = WeatherReadingSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [filters.OrderingFilter]
     ordering_fields = ["received_at"]
     ordering = ["-received_at"]
@@ -94,6 +95,58 @@ class WeatherReadingViewSet(viewsets.ReadOnlyModelViewSet):
         response = HttpResponse(csv_data, content_type="text/csv; charset=utf-8")
         response["Content-Disposition"] = f'attachment; filename="readings_{ts}.csv"'
         return response
+
+    @action(detail=False, methods=["get"])
+    def chart_daily(self, request: Request) -> Response:
+        """Agrega lecturas por día para las gráficas del histórico."""
+        from django.db.models import Avg, Max, Min
+        from django.db.models.functions import TruncDate
+
+        qs = WeatherReading.objects.all()
+        date_from = request.query_params.get("from")
+        date_to = request.query_params.get("to")
+        if date_from:
+            qs = qs.filter(received_at__date__gte=date_from)
+        if date_to:
+            qs = qs.filter(received_at__date__lte=date_to)
+
+        daily = (
+            qs.annotate(day=TruncDate("received_at"))
+            .values("day")
+            .annotate(
+                temp_avg=Avg("temperature_out"),
+                temp_max=Max("temperature_out"),
+                temp_min=Min("temperature_out"),
+                hum_avg=Avg("humidity_out"),
+                pres_avg=Avg("pressure"),
+                wind_avg=Avg("wind_speed"),
+                gust_max=Max("wind_gust"),
+                rain_max=Max("rain_daily"),
+                uv_max=Max("uv_index"),
+                solar_avg=Avg("solar_radiation"),
+            )
+            .order_by("day")
+        )
+
+        def _r(v, d=1):
+            return round(float(v), d) if v is not None else None
+
+        return Response([
+            {
+                "date":      row["day"].isoformat(),
+                "temp_avg":  _r(row["temp_avg"]),
+                "temp_max":  _r(row["temp_max"]),
+                "temp_min":  _r(row["temp_min"]),
+                "hum_avg":   _r(row["hum_avg"]),
+                "pres_avg":  _r(row["pres_avg"]),
+                "wind_avg":  _r(row["wind_avg"]),
+                "gust_max":  _r(row["gust_max"]),
+                "rain_max":  _r(row["rain_max"]),
+                "uv_max":    _r(row["uv_max"]),
+                "solar_avg": _r(row["solar_avg"]),
+            }
+            for row in daily
+        ])
 
     @action(detail=False, methods=["get"])
     def chart(self, request: Request) -> Response:

@@ -20,6 +20,7 @@ urlpatterns = [
     # Apps
     path("", include("apps.ingest.urls")),
     path("", include("apps.dashboard.urls")),
+    path("", include("apps.forecast.urls")),
     path("api/v1/", include("apps.alerts.urls")),
 ]
 

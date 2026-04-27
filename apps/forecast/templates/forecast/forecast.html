@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Previsión — {{ location }}{% endblock %}
+
+{% block extra_head %}{% endblock %}
+
+{% block content %}
+
+<!-- ── ALERTAS ───────────────────────────────────────────────── -->
+{% if alerts %}
+<div class="space-y-2 mb-4">
+  {% for a in alerts %}
+  <div class="flex items-start gap-3 border-l-4 rounded-lg px-4 py-3 text-sm {{ a.css }}">
+    <span class="text-lg mt-0.5">
+      {% if a.nivel == "rojo" %}🔴{% elif a.nivel == "naranja" %}🟠{% else %}⚠️{% endif %}
+    </span>
+    <div>
+      <strong class="uppercase text-xs tracking-wide">{{ a.nivel|capfirst }} — {{ a.tipo }}</strong>
+      {% if a.descripcion %}<p class="mt-0.5 text-xs opacity-90">{{ a.descripcion }}</p>{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- ── CABECERA ──────────────────────────────────────────────── -->
+<div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-5">
+  <div>
+    <h1 class="text-2xl font-extrabold text-slate-800 dark:text-slate-100">
+      Previsión 7 días
+    </h1>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+      📍 {{ location }} &nbsp;·&nbsp;
+      Actualizado: {{ last_updated|date:"d/m/Y H:i" }}
+    </p>
+  </div>
+  <a href="{% url 'forecast' %}"
+     class="self-start text-xs text-sky-600 dark:text-sky-400 hover:underline">
+    ↺ Actualizar
+  </a>
+</div>
+
+<!-- ── TARJETAS 7 DÍAS ───────────────────────────────────────── -->
+{% if forecast %}
+<div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
+  {% for d in forecast %}
+  <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-3 text-center flex flex-col items-center gap-1
+              {% if d.es_hoy %}ring-2 ring-sky-500 dark:ring-sky-400{% endif %}">
+
+    <!-- Día y fecha -->
+    <p class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+      {% if d.es_hoy %}HOY{% else %}{{ d.dia_semana|slice:":3" }}{% endif %}
+    </p>
+    <p class="text-xs text-slate-400 dark:text-slate-500">{{ d.dia_num }} {{ d.mes }}</p>
+
+    <!-- Icono cielo -->
+    <span class="text-4xl leading-none my-1" title="{{ d.sky_desc }}">{{ d.sky_emoji }}</span>
+    <p class="text-xs {{ d.sky_class }} font-medium leading-tight text-center">{{ d.sky_desc }}</p>
+
+    <!-- Temperatura -->
+    <div class="mt-1">
+      <span class="text-2xl font-extrabold text-rose-500">
+        {% if d.temp_max is not None %}{{ d.temp_max }}°{% else %}—{% endif %}
+      </span>
+      <span class="text-sm text-slate-400 dark:text-slate-500">&nbsp;/&nbsp;</span>
+      <span class="text-lg font-semibold text-blue-400">
+        {% if d.temp_min is not None %}{{ d.temp_min }}°{% else %}—{% endif %}
+      </span>
+    </div>
+
+    <!-- Prob. precipitación -->
+    <p class="text-xs text-cyan-600 dark:text-cyan-400 font-medium">
+      💧 {% if d.prob_precip is not None %}{{ d.prob_precip }}%{% else %}—{% endif %}
+    </p>
+
+    <!-- Viento -->
+    <p class="text-xs text-amber-600 dark:text-amber-400">
+      💨
+      {% if d.viento_dir != "—" %}
+        <span class="inline-block" style="display:inline-block;transform:rotate({{ d.viento_deg }}deg);">↑</span>
+        {{ d.viento_dir }}
+      {% endif %}
+      {% if d.viento_km %}{{ d.viento_km }} km/h{% else %}—{% endif %}
+    </p>
+
+    <!-- Racha -->
+    {% if d.racha_km %}
+    <p class="text-xs text-orange-500 dark:text-orange-400">💨⚡ {{ d.racha_km }} km/h</p>
+    {% endif %}
+
+    <!-- UV -->
+    {% if d.uv_max is not None %}
+    <p class="text-xs mt-1
+      {% if d.uv_max <= 2 %}text-green-600 dark:text-green-400
+      {% elif d.uv_max <= 5 %}text-yellow-600 dark:text-yellow-400
+      {% elif d.uv_max <= 7 %}text-orange-600 dark:text-orange-400
+      {% elif d.uv_max <= 10 %}text-red-600 dark:text-red-400
+      {% else %}text-purple-600 dark:text-purple-400
+      {% endif %}
+      font-semibold">
+      ☀️ UV {{ d.uv_max }}
+    </p>
+    {% endif %}
+
+    <!-- Tormenta / Nieve -->
+    {% if d.prob_tormenta and d.prob_tormenta != "0" %}
+    <p class="text-xs text-purple-600 dark:text-purple-400">⛈️ {{ d.prob_tormenta }}%</p>
+    {% endif %}
+    {% if d.prob_nieve and d.prob_nieve != "0" %}
+    <p class="text-xs text-cyan-500 dark:text-cyan-300">❄️ {{ d.prob_nieve }}%</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<!-- Sin datos -->
+<div class="bg-blue-50 dark:bg-slate-800 border border-blue-200 dark:border-slate-700 rounded-xl p-8 text-center mb-6">
+  <p class="text-4xl mb-2">🌫️</p>
+  <p class="text-slate-600 dark:text-slate-300 font-medium">No se pudo obtener la previsión</p>
+  <p class="text-sm text-slate-400 dark:text-slate-500 mt-1">
+    Comprueba la <code class="bg-slate-200 dark:bg-slate-700 px-1 rounded">AEMET_API_KEY</code>
+    en el archivo <code class="bg-slate-200 dark:bg-slate-700 px-1 rounded">.env</code>
+    o inténtalo más tarde.
+  </p>
+</div>
+{% endif %}
+
+<!-- ── MAPA METEOROLÓGICO WINDY ───────────────────────────────── -->
+<div class="bg-white dark:bg-slate-800 rounded-xl shadow-md overflow-hidden mb-6">
+  <div class="px-4 pt-3 pb-2 border-b border-slate-100 dark:border-slate-700">
+    <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200">
+      🌍 Mapa meteorológico interactivo — Segura de León
+    </h2>
+    <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+      Cambia la capa con el menú: lluvia · viento · temperatura · nubes · alertas
+    </p>
+  </div>
+  <iframe
+    width="100%"
+    height="500"
+    src="https://embed.windy.com/embed2.html?lat=38.12&lon=-6.53&detailLat=38.12&detailLon=-6.53&zoom=8&level=surface&overlay=rain&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1"
+    frameborder="0"
+    style="display:block;">
+  </iframe>
+  <p class="text-xs text-slate-400 dark:text-slate-500 text-right px-3 py-1.5">
+    Powered by <a href="https://www.windy.com" target="_blank" rel="noopener"
+                  class="hover:underline">Windy.com</a>
+  </p>
+</div>
+
+<!-- ── TABLAS DETALLE ────────────────────────────────────────── -->
+{% if forecast %}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+
+  <!-- Tabla viento -->
+  <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md overflow-hidden">
+    <div class="px-4 pt-3 pb-2 border-b border-slate-100 dark:border-slate-700">
+      <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200">💨 Viento y rachas</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-700/50">
+            <th class="px-4 py-2 text-left">Día</th>
+            <th class="px-4 py-2 text-center">Dirección</th>
+            <th class="px-4 py-2 text-center">Velocidad</th>
+            <th class="px-4 py-2 text-center">Racha máx.</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+          {% for d in forecast %}
+          <tr class="{% if d.es_hoy %}bg-sky-50 dark:bg-sky-900/20 font-semibold{% endif %}">
+            <td class="px-4 py-2 text-slate-700 dark:text-slate-200">
+              {% if d.es_hoy %}Hoy{% else %}{{ d.dia_semana|slice:":3" }} {{ d.dia_num }}{% endif %}
+            </td>
+            <td class="px-4 py-2 text-center text-amber-600 dark:text-amber-400">
+              {% if d.viento_dir != "—" %}
+              <span style="display:inline-block;transform:rotate({{ d.viento_deg }}deg);">↑</span>
+              {{ d.viento_dir }}
+              {% else %}—{% endif %}
+            </td>
+            <td class="px-4 py-2 text-center text-amber-700 dark:text-amber-300">
+              {% if d.viento_km %}{{ d.viento_km }} km/h{% else %}—{% endif %}
+            </td>
+            <td class="px-4 py-2 text-center text-orange-600 dark:text-orange-400">
+              {% if d.racha_km %}{{ d.racha_km }} km/h{% else %}—{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Tabla lluvia -->
+  <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md overflow-hidden">
+    <div class="px-4 pt-3 pb-2 border-b border-slate-100 dark:border-slate-700">
+      <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200">🌧️ Precipitación</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-700/50">
+            <th class="px-4 py-2 text-left">Día</th>
+            <th class="px-4 py-2 text-center">Prob. lluvia</th>
+            <th class="px-4 py-2 text-center">Prob. tormenta</th>
+            <th class="px-4 py-2 text-center">Prob. nieve</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+          {% for d in forecast %}
+          <tr class="{% if d.es_hoy %}bg-sky-50 dark:bg-sky-900/20 font-semibold{% endif %}">
+            <td class="px-4 py-2 text-slate-700 dark:text-slate-200">
+              {% if d.es_hoy %}Hoy{% else %}{{ d.dia_semana|slice:":3" }} {{ d.dia_num }}{% endif %}
+            </td>
+            <td class="px-4 py-2 text-center">
+              {% if d.prob_precip is not None %}
+              <span class="{% if d.prob_precip|floatformat:0 > '50' %}text-blue-600 dark:text-blue-400 font-semibold{% else %}text-slate-600 dark:text-slate-300{% endif %}">
+                {{ d.prob_precip }}%
+              </span>
+              {% else %}—{% endif %}
+            </td>
+            <td class="px-4 py-2 text-center text-purple-600 dark:text-purple-400">
+              {% if d.prob_tormenta and d.prob_tormenta != "0" %}{{ d.prob_tormenta }}%{% else %}—{% endif %}
+            </td>
+            <td class="px-4 py-2 text-center text-cyan-600 dark:text-cyan-400">
+              {% if d.prob_nieve and d.prob_nieve != "0" %}{{ d.prob_nieve }}%{% else %}—{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Tabla temperatura + humedad -->
+<div class="bg-white dark:bg-slate-800 rounded-xl shadow-md overflow-hidden mb-6">
+  <div class="px-4 pt-3 pb-2 border-b border-slate-100 dark:border-slate-700">
+    <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200">🌡️ Temperatura y humedad</h2>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-700/50">
+          <th class="px-4 py-2 text-left">Día</th>
+          <th class="px-4 py-2 text-center">T. máx</th>
+          <th class="px-4 py-2 text-center">T. mín</th>
+          <th class="px-4 py-2 text-center">Sensación máx</th>
+          <th class="px-4 py-2 text-center">Sensación mín</th>
+          <th class="px-4 py-2 text-center">Humedad</th>
+          <th class="px-4 py-2 text-center">UV máx</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+        {% for d in forecast %}
+        <tr class="{% if d.es_hoy %}bg-sky-50 dark:bg-sky-900/20 font-semibold{% endif %}">
+          <td class="px-4 py-2 text-slate-700 dark:text-slate-200">
+            {% if d.es_hoy %}Hoy{% else %}{{ d.dia_semana|slice:":3" }} {{ d.dia_num }}{% endif %}
+          </td>
+          <td class="px-4 py-2 text-center text-rose-500 font-bold">
+            {% if d.temp_max is not None %}{{ d.temp_max }}°C{% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-2 text-center text-blue-400 font-semibold">
+            {% if d.temp_min is not None %}{{ d.temp_min }}°C{% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-2 text-center text-rose-400">
+            {% if d.feels_max is not None %}{{ d.feels_max }}°C{% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-2 text-center text-blue-300">
+            {% if d.feels_min is not None %}{{ d.feels_min }}°C{% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-2 text-center text-emerald-600 dark:text-emerald-400">
+            {% if d.hum_max is not None %}{{ d.hum_max }}%{% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-2 text-center font-semibold
+            {% if d.uv_max is not None %}
+              {% if d.uv_max <= 2 %}text-green-600 dark:text-green-400
+              {% elif d.uv_max <= 5 %}text-yellow-600 dark:text-yellow-400
+              {% elif d.uv_max <= 7 %}text-orange-600 dark:text-orange-400
+              {% elif d.uv_max <= 10 %}text-red-600 dark:text-red-400
+              {% else %}text-purple-600 dark:text-purple-400
+              {% endif %}
+            {% else %}text-slate-400{% endif %}">
+            {% if d.uv_max is not None %}{{ d.uv_max }}{% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- ── Nota legal ────────────────────────────────────────────── -->
+<p class="text-xs text-slate-400 dark:text-slate-600 text-center mb-4">
+  Datos: AEMET OpenData —
+  <a href="https://opendata.aemet.es" class="underline hover:text-slate-600 dark:hover:text-slate-400"
+     target="_blank" rel="noopener">opendata.aemet.es</a>
+</p>
+
+{% endblock %}
+
+{% block extra_js %}{% endblock %}

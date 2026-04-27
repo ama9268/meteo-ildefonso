@@ -2,79 +2,487 @@
 {% block title %}Histórico — EstacioMeteo{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h2>Histórico de lecturas</h2>
+
+<!-- ── CABECERA ──────────────────────────────────────────────── -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+  <div>
+    <h1 class="text-2xl font-extrabold text-slate-800 dark:text-slate-100">Histórico de lecturas</h1>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+      {{ paginator.count }} lecturas en el rango seleccionado
+    </p>
+  </div>
   <a href="/api/v1/readings/export/?from={{ date_from }}&to={{ date_to }}"
-     class="btn btn-outline-success btn-sm">⬇ Exportar CSV</a>
+     class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg
+            bg-emerald-600 hover:bg-emerald-700 text-white transition-colors self-start">
+    ⬇ Exportar CSV
+  </a>
 </div>
 
-<form method="get" class="row g-2 mb-4">
-  <div class="col-auto">
-    <label class="form-label small">Desde</label>
-    <input type="date" name="from" value="{{ date_from }}" class="form-control form-control-sm">
-  </div>
-  <div class="col-auto">
-    <label class="form-label small">Hasta</label>
-    <input type="date" name="to" value="{{ date_to }}" class="form-control form-control-sm">
-  </div>
-  <div class="col-auto align-self-end">
-    <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
-    <a href="{% url 'history' %}" class="btn btn-secondary btn-sm">Limpiar</a>
-  </div>
-</form>
+<!-- ── FILTROS ───────────────────────────────────────────────── -->
+<div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-4 mb-5">
 
-<div class="card">
-  <div class="table-responsive">
-    <table class="table table-sm table-hover mb-0">
-      <thead class="table-light">
-        <tr>
-          <th>Fecha/Hora (UTC)</th>
-          <th>T.ext (°C)</th>
-          <th>Hum. (%)</th>
-          <th>Presión (hPa)</th>
-          <th>Viento (km/h)</th>
-          <th>Ráfaga</th>
-          <th>Lluvia (mm)</th>
-          <th>UV</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for r in readings %}
-        <tr>
-          <td>{{ r.received_at|date:"d/m/Y H:i:s" }}</td>
-          <td>{{ r.temperature_out|default:"—" }}</td>
-          <td>{{ r.humidity_out|default:"—" }}</td>
-          <td>{{ r.pressure|default:"—" }}</td>
-          <td>{{ r.wind_speed|default:"—" }}</td>
-          <td>{{ r.wind_gust|default:"—" }}</td>
-          <td>{{ r.rain_daily|default:"—" }}</td>
-          <td>{{ r.uv_index|default:"—" }}</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="8" class="text-center text-muted py-3">Sin lecturas en este rango.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <!-- Botones de acceso rápido -->
+  <div class="flex flex-wrap items-center gap-2 mb-4">
+    <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 shrink-0">Acceso rápido:</span>
+    <button type="button" onclick="setPreset('week')"
+            class="preset-btn px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors
+                   border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300
+                   hover:bg-sky-50 dark:hover:bg-slate-700 hover:border-sky-400 dark:hover:border-sky-500">
+      Última semana
+    </button>
+    <button type="button" onclick="setPreset('month')"
+            class="preset-btn px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors
+                   border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300
+                   hover:bg-sky-50 dark:hover:bg-slate-700 hover:border-sky-400 dark:hover:border-sky-500">
+      Último mes
+    </button>
+    <button type="button" onclick="setPreset('3months')"
+            class="preset-btn px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors
+                   border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300
+                   hover:bg-sky-50 dark:hover:bg-slate-700 hover:border-sky-400 dark:hover:border-sky-500">
+      Últimos 3 meses
+    </button>
+    <button type="button" onclick="setPreset('year')"
+            class="preset-btn px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors
+                   border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300
+                   hover:bg-sky-50 dark:hover:bg-slate-700 hover:border-sky-400 dark:hover:border-sky-500">
+      Año actual
+    </button>
+    <button type="button" onclick="setPreset('lastyear')"
+            class="preset-btn px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors
+                   border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300
+                   hover:bg-sky-50 dark:hover:bg-slate-700 hover:border-sky-400 dark:hover:border-sky-500">
+      Desde hace un año
+    </button>
+  </div>
+
+  <!-- Selector de fechas personalizado -->
+  <form id="filter-form" method="get" class="flex flex-wrap items-end gap-3">
+    <div class="flex flex-col gap-1">
+      <label for="id-from" class="text-xs font-medium text-slate-600 dark:text-slate-300">Desde</label>
+      <input type="date" id="id-from" name="from" value="{{ date_from }}"
+             class="px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600
+                    bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100
+                    [color-scheme:light] dark:[color-scheme:dark]
+                    focus:outline-none focus:ring-2 focus:ring-sky-500">
+    </div>
+    <div class="flex flex-col gap-1">
+      <label for="id-to" class="text-xs font-medium text-slate-600 dark:text-slate-300">Hasta</label>
+      <input type="date" id="id-to" name="to" value="{{ date_to }}"
+             class="px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600
+                    bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100
+                    [color-scheme:light] dark:[color-scheme:dark]
+                    focus:outline-none focus:ring-2 focus:ring-sky-500">
+    </div>
+    <div class="flex gap-2">
+      <button type="submit"
+              class="px-4 py-1.5 text-sm font-medium rounded-lg bg-sky-600 hover:bg-sky-700
+                     text-white transition-colors">
+        Filtrar
+      </button>
+      <a href="{% url 'history' %}"
+         class="px-4 py-1.5 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-600
+                text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700
+                transition-colors">
+        Limpiar
+      </a>
+    </div>
+  </form>
+</div>
+
+<!-- ── 8 GRÁFICAS ────────────────────────────────────────────── -->
+<div class="mb-6">
+  <h2 class="text-lg font-bold text-slate-700 dark:text-slate-200 mb-3">Gráficas por día</h2>
+
+  <div id="chart-loading" class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-10 text-center
+                                  text-slate-400 dark:text-slate-500 text-sm">
+    Cargando datos de gráficas...
+  </div>
+  <div id="chart-no-data" class="hidden bg-white dark:bg-slate-800 rounded-xl shadow-md p-10 text-center">
+    <p class="text-slate-400 dark:text-slate-500 text-sm">Sin datos en el rango seleccionado.</p>
+  </div>
+
+  <div id="chart-grid" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+    <!-- Temperatura -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-4">
+      <p class="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-2">🌡️ Temperatura exterior (°C)</p>
+      <canvas id="chart-temp" class="meteo-chart"></canvas>
+    </div>
+
+    <!-- Humedad -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-4">
+      <p class="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-2">💧 Humedad exterior (%)</p>
+      <canvas id="chart-hum" class="meteo-chart"></canvas>
+    </div>
+
+    <!-- Presión -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-4">
+      <p class="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-2">📊 Presión atmosférica (hPa)</p>
+      <canvas id="chart-pres" class="meteo-chart"></canvas>
+    </div>
+
+    <!-- Viento -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-4">
+      <p class="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-2">💨 Velocidad del viento (km/h)</p>
+      <canvas id="chart-wind" class="meteo-chart"></canvas>
+    </div>
+
+    <!-- Ráfaga -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-4">
+      <p class="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-2">💨⚡ Ráfaga máxima (km/h)</p>
+      <canvas id="chart-gust" class="meteo-chart"></canvas>
+    </div>
+
+    <!-- Lluvia -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-4">
+      <p class="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-2">🌧️ Lluvia diaria (mm)</p>
+      <canvas id="chart-rain" class="meteo-chart"></canvas>
+    </div>
+
+    <!-- UV -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-4">
+      <p class="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-2">☀️ Índice UV (máximo diario)</p>
+      <canvas id="chart-uv" class="meteo-chart"></canvas>
+    </div>
+
+    <!-- Radiación solar -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-4">
+      <p class="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-2">🔆 Radiación solar (W/m²)</p>
+      <canvas id="chart-solar" class="meteo-chart"></canvas>
+    </div>
+
   </div>
 </div>
 
+<!-- ── TABLA DE DATOS CRUDOS ─────────────────────────────────── -->
+<div class="mb-6">
+  <h2 class="text-lg font-bold text-slate-700 dark:text-slate-200 mb-3">Lecturas individuales</h2>
+
+  <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400
+                     bg-slate-50 dark:bg-slate-700/60 border-b border-slate-200 dark:border-slate-700">
+            <th class="px-4 py-3 text-left whitespace-nowrap">Fecha/Hora</th>
+            <th class="px-4 py-3 text-right whitespace-nowrap">T. ext (°C)</th>
+            <th class="px-4 py-3 text-right whitespace-nowrap">Hum. (%)</th>
+            <th class="px-4 py-3 text-right whitespace-nowrap">Presión (hPa)</th>
+            <th class="px-4 py-3 text-right whitespace-nowrap">Viento (km/h)</th>
+            <th class="px-4 py-3 text-right whitespace-nowrap">Ráfaga (km/h)</th>
+            <th class="px-4 py-3 text-right whitespace-nowrap">Lluvia (mm)</th>
+            <th class="px-4 py-3 text-right whitespace-nowrap">UV</th>
+            <th class="px-4 py-3 text-right whitespace-nowrap">Solar (W/m²)</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+          {% for r in readings %}
+          <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors">
+            <td class="px-4 py-2 text-slate-600 dark:text-slate-300 whitespace-nowrap font-mono text-xs">
+              {{ r.received_at|date:"d/m/Y H:i:s" }}
+            </td>
+            <td class="px-4 py-2 text-right text-rose-500 dark:text-rose-400 font-medium">
+              {{ r.temperature_out|default:"—" }}
+            </td>
+            <td class="px-4 py-2 text-right text-blue-500 dark:text-blue-400">
+              {{ r.humidity_out|default:"—" }}
+            </td>
+            <td class="px-4 py-2 text-right text-emerald-600 dark:text-emerald-400">
+              {{ r.pressure|default:"—" }}
+            </td>
+            <td class="px-4 py-2 text-right text-amber-600 dark:text-amber-400">
+              {{ r.wind_speed|default:"—" }}
+            </td>
+            <td class="px-4 py-2 text-right text-orange-500 dark:text-orange-400">
+              {{ r.wind_gust|default:"—" }}
+            </td>
+            <td class="px-4 py-2 text-right text-cyan-600 dark:text-cyan-400">
+              {{ r.rain_daily|default:"—" }}
+            </td>
+            <td class="px-4 py-2 text-right text-purple-600 dark:text-purple-400">
+              {{ r.uv_index|default:"—" }}
+            </td>
+            <td class="px-4 py-2 text-right text-yellow-600 dark:text-yellow-400">
+              {{ r.solar_radiation|default:"—" }}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9" class="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-sm">
+              Sin lecturas en este rango de fechas.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── PAGINACIÓN ─────────────────────────────────────────────── -->
 {% if is_paginated %}
-<nav class="mt-3">
-  <ul class="pagination pagination-sm justify-content-center">
-    {% if page_obj.has_previous %}
-      <li class="page-item">
-        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&from={{ date_from }}&to={{ date_to }}">«</a>
-      </li>
-    {% endif %}
-    <li class="page-item disabled">
-      <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-    </li>
-    {% if page_obj.has_next %}
-      <li class="page-item">
-        <a class="page-link" href="?page={{ page_obj.next_page_number }}&from={{ date_from }}&to={{ date_to }}">»</a>
-      </li>
-    {% endif %}
-  </ul>
+<nav class="flex items-center justify-center gap-1 mb-6">
+  {% if page_obj.has_previous %}
+  <a href="?page=1&from={{ date_from }}&to={{ date_to }}"
+     class="px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600
+            text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+    «
+  </a>
+  <a href="?page={{ page_obj.previous_page_number }}&from={{ date_from }}&to={{ date_to }}"
+     class="px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600
+            text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+    ‹
+  </a>
+  {% endif %}
+
+  <span class="px-4 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-200
+               bg-sky-50 dark:bg-sky-900/30 border border-sky-300 dark:border-sky-700 rounded-lg">
+    {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+  </span>
+
+  {% if page_obj.has_next %}
+  <a href="?page={{ page_obj.next_page_number }}&from={{ date_from }}&to={{ date_to }}"
+     class="px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600
+            text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+    ›
+  </a>
+  <a href="?page={{ page_obj.paginator.num_pages }}&from={{ date_from }}&to={{ date_to }}"
+     class="px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600
+            text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+    »
+  </a>
+  {% endif %}
 </nav>
 {% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Utilidades de fecha ──────────────────────────────────────────
+function dateStr(d) {
+  return d.toISOString().split('T')[0];
+}
+function daysAgo(n) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d;
+}
+function today() { return new Date(); }
+
+// ── Botones de acceso rápido ─────────────────────────────────────
+function setPreset(preset) {
+  const t = today();
+  let from;
+  switch (preset) {
+    case 'week':     from = daysAgo(7);  break;
+    case 'month':    from = daysAgo(30); break;
+    case '3months':  from = daysAgo(90); break;
+    case 'year':
+      from = new Date(t.getFullYear(), 0, 1); break;
+    case 'lastyear':
+      from = new Date(t.getFullYear() - 1, t.getMonth(), t.getDate()); break;
+    default: return;
+  }
+  document.getElementById('id-from').value = dateStr(from);
+  document.getElementById('id-to').value   = dateStr(t);
+  document.getElementById('filter-form').submit();
+}
+
+// ── Paleta de colores ────────────────────────────────────────────
+const dark = document.documentElement.classList.contains('dark');
+const P = {
+  temp:   dark ? 'rgba(251,113,133,1)'  : 'rgba(239,68,68,1)',
+  tempBg: dark ? 'rgba(251,113,133,0.1)': 'rgba(239,68,68,0.1)',
+  tempH:  dark ? 'rgba(252,165,165,0.6)': 'rgba(252,165,165,0.5)',
+  tempL:  dark ? 'rgba(96,165,250,0.6)' : 'rgba(59,130,246,0.5)',
+  hum:    dark ? 'rgba(96,165,250,1)'   : 'rgba(59,130,246,1)',
+  humBg:  dark ? 'rgba(96,165,250,0.1)' : 'rgba(59,130,246,0.1)',
+  pres:   dark ? 'rgba(52,211,153,1)'   : 'rgba(16,185,129,1)',
+  presBg: dark ? 'rgba(52,211,153,0.1)' : 'rgba(16,185,129,0.1)',
+  wind:   dark ? 'rgba(251,191,36,1)'   : 'rgba(245,158,11,1)',
+  windBg: dark ? 'rgba(251,191,36,0.1)' : 'rgba(245,158,11,0.1)',
+  gust:   dark ? 'rgba(251,146,60,1)'   : 'rgba(249,115,22,1)',
+  rain:   dark ? 'rgba(34,211,238,1)'   : 'rgba(6,182,212,1)',
+  uv:     dark ? 'rgba(167,139,250,1)'  : 'rgba(139,92,246,1)',
+  solar:  dark ? 'rgba(250,204,21,1)'   : 'rgba(234,179,8,1)',
+  solarBg:dark ? 'rgba(250,204,21,0.1)' : 'rgba(234,179,8,0.1)',
+  grid:   dark ? 'rgba(255,255,255,0.07)': 'rgba(0,0,0,0.06)',
+  tick:   dark ? '#94a3b8' : '#64748b',
+};
+
+// ── Opciones comunes de Chart.js ─────────────────────────────────
+function baseOpts(yLabel) {
+  return {
+    responsive: true,
+    maintainAspectRatio: true,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { labels: { color: P.tick, boxWidth: 12, font: { size: 11 } } },
+      tooltip: { bodyFont: { size: 11 }, titleFont: { size: 11 } },
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: P.tick, font: { size: 10 },
+          maxTicksLimit: 10,
+          maxRotation: 45, minRotation: 0,
+        },
+        grid: { color: P.grid },
+      },
+      y: {
+        ticks: { color: P.tick, font: { size: 10 } },
+        grid: { color: P.grid },
+        title: { display: !!yLabel, text: yLabel, color: P.tick, font: { size: 10 } },
+      },
+    },
+  };
+}
+
+function lineDs(label, data, color, bg, fill) {
+  return {
+    label, data,
+    borderColor: color, backgroundColor: bg,
+    borderWidth: 2, pointRadius: 2, tension: 0.3,
+    fill: fill ?? false,
+  };
+}
+function barDs(label, data, color) {
+  return {
+    label, data,
+    backgroundColor: color.replace(',1)', ',0.75)'),
+    borderColor: color, borderWidth: 1,
+    borderRadius: 3,
+  };
+}
+
+// ── Renderizado de gráficas ──────────────────────────────────────
+function renderCharts(rows) {
+  const labels = rows.map(r => {
+    const [y, m, d] = r.date.split('-');
+    return `${d}/${m}`;
+  });
+
+  // 1 — Temperatura: banda max/min + media
+  new Chart(document.getElementById('chart-temp'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { ...lineDs('Máx.', rows.map(r => r.temp_max), P.tempH, 'transparent'),
+          borderDash: [4,2], borderWidth: 1.5, pointRadius: 0 },
+        { ...lineDs('Mín.', rows.map(r => r.temp_min), P.tempL, P.tempBg),
+          borderDash: [4,2], borderWidth: 1.5, pointRadius: 0, fill: '-1' },
+        lineDs('Media', rows.map(r => r.temp_avg), P.temp, P.tempBg),
+      ],
+    },
+    options: baseOpts('°C'),
+  });
+
+  // 2 — Humedad
+  new Chart(document.getElementById('chart-hum'), {
+    type: 'line',
+    data: { labels, datasets: [lineDs('Humedad media', rows.map(r => r.hum_avg), P.hum, P.humBg, true)] },
+    options: { ...baseOpts('%'), scales: { ...baseOpts('%').scales, y: { ...baseOpts('%').scales.y, min: 0, max: 100 } } },
+  });
+
+  // 3 — Presión
+  new Chart(document.getElementById('chart-pres'), {
+    type: 'line',
+    data: { labels, datasets: [lineDs('Presión media', rows.map(r => r.pres_avg), P.pres, P.presBg, true)] },
+    options: baseOpts('hPa'),
+  });
+
+  // 4 — Viento (media)
+  new Chart(document.getElementById('chart-wind'), {
+    type: 'line',
+    data: { labels, datasets: [lineDs('Vel. media', rows.map(r => r.wind_avg), P.wind, P.windBg, true)] },
+    options: baseOpts('km/h'),
+  });
+
+  // 5 — Ráfaga máxima (barras)
+  new Chart(document.getElementById('chart-gust'), {
+    type: 'bar',
+    data: { labels, datasets: [barDs('Ráfaga máx.', rows.map(r => r.gust_max), P.gust)] },
+    options: baseOpts('km/h'),
+  });
+
+  // 6 — Lluvia diaria (barras)
+  new Chart(document.getElementById('chart-rain'), {
+    type: 'bar',
+    data: { labels, datasets: [barDs('Lluvia', rows.map(r => r.rain_max), P.rain)] },
+    options: baseOpts('mm'),
+  });
+
+  // 7 — UV máximo (barras con colores por nivel)
+  const uvColors = rows.map(r => {
+    const v = r.uv_max ?? 0;
+    if (v <= 2)  return 'rgba(34,197,94,0.8)';
+    if (v <= 5)  return 'rgba(234,179,8,0.8)';
+    if (v <= 7)  return 'rgba(249,115,22,0.8)';
+    if (v <= 10) return 'rgba(239,68,68,0.8)';
+    return 'rgba(139,92,246,0.8)';
+  });
+  new Chart(document.getElementById('chart-uv'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'UV máx.',
+        data: rows.map(r => r.uv_max),
+        backgroundColor: uvColors,
+        borderColor: uvColors.map(c => c.replace('0.8)', '1)')),
+        borderWidth: 1, borderRadius: 3,
+      }],
+    },
+    options: baseOpts('UV'),
+  });
+
+  // 8 — Radiación solar (línea)
+  new Chart(document.getElementById('chart-solar'), {
+    type: 'line',
+    data: { labels, datasets: [lineDs('Rad. media', rows.map(r => r.solar_avg), P.solar, P.solarBg, true)] },
+    options: baseOpts('W/m²'),
+  });
+}
+
+// ── Actualizar colores al cambiar tema ───────────────────────────
+window.updateChartsTheme = function() {
+  // Recargar la página para re-renderizar gráficas con nueva paleta
+  location.reload();
+};
+
+// ── Cargar datos y renderizar ────────────────────────────────────
+(function () {
+  const params = new URLSearchParams(window.location.search);
+  let from = params.get('from');
+  let to   = params.get('to');
+
+  // Defecto si no hay filtro: último mes
+  if (!from && !to) {
+    to   = dateStr(today());
+    from = dateStr(daysAgo(30));
+  } else if (!from) {
+    from = dateStr(daysAgo(365));
+  } else if (!to) {
+    to = dateStr(today());
+  }
+
+  fetch(`/api/v1/readings/chart_daily/?from=${from}&to=${to}`)
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('chart-loading').classList.add('hidden');
+      if (!data || data.length === 0) {
+        document.getElementById('chart-no-data').classList.remove('hidden');
+        return;
+      }
+      document.getElementById('chart-grid').classList.remove('hidden');
+      renderCharts(data);
+    })
+    .catch(() => {
+      document.getElementById('chart-loading').textContent = 'Error al cargar las gráficas.';
+    });
+})();
+</script>
 {% endblock %}

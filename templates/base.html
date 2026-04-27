@@ -42,6 +42,7 @@
         <div class="hidden md:flex items-center space-x-1">
           <a href="{% url 'dashboard' %}" class="text-sky-100 hover:text-white hover:bg-sky-700 dark:hover:bg-slate-700 px-3 py-2 rounded-md text-sm font-medium transition-colors">Inicio</a>
           <a href="{% url 'history' %}"   class="text-sky-100 hover:text-white hover:bg-sky-700 dark:hover:bg-slate-700 px-3 py-2 rounded-md text-sm font-medium transition-colors">Histórico</a>
+          <a href="{% url 'forecast' %}"  class="text-sky-100 hover:text-white hover:bg-sky-700 dark:hover:bg-slate-700 px-3 py-2 rounded-md text-sm font-medium transition-colors">Previsión</a>
           <a href="{% url 'admin:index' %}" class="text-sky-100 hover:text-white hover:bg-sky-700 dark:hover:bg-slate-700 px-3 py-2 rounded-md text-sm font-medium transition-colors">Admin</a>
           {% if user.is_authenticated %}
           <a href="{% url 'logout' %}" class="text-sky-100 hover:text-white hover:bg-sky-700 dark:hover:bg-slate-700 px-3 py-2 rounded-md text-sm font-medium transition-colors">Salir</a>
@@ -87,6 +88,7 @@
       <div class="px-4 pt-2 pb-3 space-y-1">
         <a href="{% url 'dashboard' %}" class="block text-sky-100 hover:text-white hover:bg-sky-700 dark:hover:bg-slate-700 px-3 py-2 rounded-md text-sm font-medium">Inicio</a>
         <a href="{% url 'history' %}"   class="block text-sky-100 hover:text-white hover:bg-sky-700 dark:hover:bg-slate-700 px-3 py-2 rounded-md text-sm font-medium">Histórico</a>
+        <a href="{% url 'forecast' %}"  class="block text-sky-100 hover:text-white hover:bg-sky-700 dark:hover:bg-slate-700 px-3 py-2 rounded-md text-sm font-medium">Previsión</a>
         <a href="{% url 'admin:index' %}" class="block text-sky-100 hover:text-white hover:bg-sky-700 dark:hover:bg-slate-700 px-3 py-2 rounded-md text-sm font-medium">Admin</a>
         {% if user.is_authenticated %}
         <a href="{% url 'logout' %}" class="block text-sky-100 hover:text-white hover:bg-sky-700 dark:hover:bg-slate-700 px-3 py-2 rounded-md text-sm font-medium">Salir</a>

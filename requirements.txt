@@ -1,5 +1,6 @@
 asgiref==3.11.1
 Django==6.0.4
+requests==2.32.3
 django-environ==0.13.0
 django-ratelimit==4.1.0
 djangorestframework==3.17.1

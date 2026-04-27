@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     "apps.ingest",
     "apps.dashboard",
     "apps.alerts",
+    "apps.forecast",
 ]
 
 MIDDLEWARE = [
@@ -68,7 +69,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LANGUAGE_CODE = "es-es"
-TIME_ZONE = "UTC"
+TIME_ZONE = "Europe/Madrid"
 USE_I18N = True
 USE_TZ = True
 
@@ -110,6 +111,8 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@estacio-meteo.lo
 
 STATION_ID = env("STATION_ID")
 STATION_KEY = env("STATION_KEY")
+
+AEMET_API_KEY = env("AEMET_API_KEY", default="")
 
 LOGGING = {
     "version": 1,
