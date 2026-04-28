@@ -50,6 +50,12 @@
     <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Viento</p>
     <p class="text-4xl font-extrabold text-amber-500 dark:text-amber-400 tabular-nums leading-none">{{ l.wind_speed|default:"—" }}</p>
     <p class="text-sm text-slate-400 dark:text-slate-500 mt-1">km/h</p>
+    {% if l.wind_dir_label %}
+    <p class="text-sm font-semibold text-amber-600 dark:text-amber-300 mt-2">
+      <span style="display:inline-block;transform:rotate({{ l.wind_dir|floatformat:0 }}deg);">↑</span>
+      {{ l.wind_dir_label }}
+    </p>
+    {% endif %}
   </div>
 
   <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md dark:shadow-slate-900/50 p-4 text-center border border-transparent dark:border-slate-700 hover:shadow-lg transition-shadow">

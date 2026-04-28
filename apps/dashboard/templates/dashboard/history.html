@@ -170,6 +170,7 @@
             <th class="px-4 py-3 text-right whitespace-nowrap">Hum. (%)</th>
             <th class="px-4 py-3 text-right whitespace-nowrap">Presión (hPa)</th>
             <th class="px-4 py-3 text-right whitespace-nowrap">Viento (km/h)</th>
+            <th class="px-4 py-3 text-center whitespace-nowrap">Dir.</th>
             <th class="px-4 py-3 text-right whitespace-nowrap">Ráfaga (km/h)</th>
             <th class="px-4 py-3 text-right whitespace-nowrap">Lluvia (mm)</th>
             <th class="px-4 py-3 text-right whitespace-nowrap">UV</th>
@@ -193,6 +194,12 @@
             </td>
             <td class="px-4 py-2 text-right text-amber-600 dark:text-amber-400">
               {{ r.wind_speed|default:"—" }}
+            </td>
+            <td class="px-4 py-2 text-center text-amber-500 dark:text-amber-300 whitespace-nowrap">
+              {% if r.wind_dir_label %}
+              <span style="display:inline-block;transform:rotate({{ r.wind_dir|floatformat:0 }}deg);">↑</span>
+              {{ r.wind_dir_label }}
+              {% else %}—{% endif %}
             </td>
             <td class="px-4 py-2 text-right text-orange-500 dark:text-orange-400">
               {{ r.wind_gust|default:"—" }}

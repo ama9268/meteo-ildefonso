@@ -34,6 +34,14 @@ class WeatherReading(models.Model):
         return f"{self.station_id} @ {self.received_at:%Y-%m-%d %H:%M:%S}"
 
     @property
+    def wind_dir_label(self) -> str | None:
+        """Convierte grados (0-360) a punto cardinal (N, NE, E, SE, S, SO, O, NO)."""
+        if self.wind_dir is None:
+            return None
+        dirs = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"]
+        return dirs[round(self.wind_dir / 45) % 8]
+
+    @property
     def feels_like(self) -> float | None:
         t = self.temperature_out
         if t is None:
