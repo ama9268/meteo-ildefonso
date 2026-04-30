@@ -4,12 +4,12 @@ After=network.target postgresql.service
 
 [Service]
 Type=simple
-User=pi
-Group=pi
-WorkingDirectory=/home/pi/EstacioMeteo
-EnvironmentFile=/home/pi/EstacioMeteo/.env
+User=root
+Group=root
+WorkingDirectory=/home/ildefonso/EstacionMeteo
+EnvironmentFile=/home/ildefonso/EstacionMeteo/.env
 Environment=DJANGO_SETTINGS_MODULE=estacio_meteo.settings.production
-ExecStart=/home/pi/EstacioMeteo/venv/bin/gunicorn \
+ExecStart=/home/ildefonso/EstacionMeteo/venv/bin/gunicorn \
     --workers 2 \
     --bind 127.0.0.1:8000 \
     --timeout 30 \
